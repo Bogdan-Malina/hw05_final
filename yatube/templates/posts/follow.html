@@ -6,14 +6,10 @@
 {% block content %}
   <h1>Избранные авторы</h1>
     {% include "includes/switcher.html" %}
-{#    {% load cache %}#}
-{#    {% cache 20 index_page with page_obj %}#}
   {% for post in page_obj %}
     <article>
       {% include "posts/includes/content.html" %}
-      <article>
         <a href="{% url "posts:post_detail" post.pk %}">подробная информация </a>
-      </article>
       {% if post.group %}
         <a href="{% url "posts:group_list" post.group.slug %}">все записи группы</a>
       {% endif %}

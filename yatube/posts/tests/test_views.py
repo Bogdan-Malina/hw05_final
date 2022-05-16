@@ -51,8 +51,6 @@ class PostPagesTests(TestCase):
             description=PostPagesTests.test_data['group_description'],
         )
 
-        cls.cache = cache
-
         for i in range(13):
             cls.post = Post.objects.create(
                 author=cls.user,
@@ -136,32 +134,6 @@ class PostPagesTests(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
-    def test_cache(self):
-        self.cache.clear()
-        post = Post.objects.create(
-            author=self.user,
-            text='test'
-        )
-        response = self.authorized_client.get(
-            PostPagesTests.templates_pages_names['posts/index.html']
-        )
-        cache_post = response.content
-        post.delete()
-        response = self.authorized_client.get(
-            PostPagesTests.templates_pages_names['posts/index.html']
-        )
-        self.assertEqual(response.content, cache_post)
-        self.cache.clear()
-        response = self.authorized_client.get(reverse('posts:index'))
-        self.assertNotEqual(response.content, cache_post)
-
-    def test_follow(self):
-        self.authorized_client.post(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.user.username})
-        )
-        self.assertEqual(Follow.objects.count(), 0)
-
     def test_anon_comment_create(self):
         response = self.guest_client.get(
             f'/posts/{self.post.id}/edit/'
@@ -230,3 +202,69 @@ class PaginatorTests(TestCase):
                     len(response_2.context['page_obj']),
                     PaginatorTests.POST_IN_PAGE_2
                 )
+
+
+class CacheTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(
+            username=PaginatorTests.test_data['user_username']
+        )
+
+        cls.cache = cache
+
+    def setUp(self):
+        self.authorized_client = Client()
+
+    def test_cache(self):
+        self.cache.clear()
+        post = Post.objects.create(
+            author=self.user,
+            text='test'
+        )
+        response = self.authorized_client.get(
+            PostPagesTests.templates_pages_names['posts/index.html']
+        )
+        cache_post = response.content
+        post.delete()
+        response = self.authorized_client.get(
+            PostPagesTests.templates_pages_names['posts/index.html']
+        )
+        self.assertEqual(response.content, cache_post)
+        self.cache.clear()
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertNotEqual(response.content, cache_post)
+
+    class FollowTest(TestCase):
+        @classmethod
+        def setUpClass(cls):
+            super().setUpClass()
+            cls.user = User.objects.create_user(
+                username=PostPagesTests.test_data['user_username']
+            )
+            cls.group = Group.objects.create(
+                title=PostPagesTests.test_data['group_title'],
+                slug=PostPagesTests.test_data['group_slug'],
+                description=PostPagesTests.test_data['group_description'],
+            )
+
+            for i in range(13):
+                cls.post = Post.objects.create(
+                    author=cls.user,
+                    text=PostPagesTests.test_data['post_text'] + str(i),
+                    group=cls.group,
+                )
+                time.sleep(0.001)
+
+        def setUp(self):
+            self.guest_client = Client()
+            self.authorized_client = Client()
+            self.authorized_client.force_login(self.user)
+
+        def test_follow(self):
+            self.authorized_client.post(
+                reverse('posts:profile_follow',
+                        kwargs={'username': self.user.username})
+            )
+            self.assertEqual(Follow.objects.count(), 0)
