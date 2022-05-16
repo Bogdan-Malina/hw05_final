@@ -16,7 +16,7 @@ def paginator(request, post_list):
 
 
 def index(request):
-    post_list = Post.objects.all().order_by('-pub_date')
+    post_list = Post.objects.all()
     context = {
         'page_obj': paginator(request, post_list),
     }
@@ -46,7 +46,7 @@ def profile(request, username):
     context = {
         'following': following,
         'page_obj': paginator(request, post_list),
-        'author_name': author,
+        'author': author,
     }
     return render(request, 'posts/profile.html', context)
 

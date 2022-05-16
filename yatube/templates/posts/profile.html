@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load thumbnail %}
 {% block title %}
-  Профайл пользователя {{ author_name.get_full_name }}
+  Профайл пользователя {{ author.get_full_name }}
 {% endblock title %}
 {% block content %} 
 <div class="mb-5">
@@ -11,14 +11,14 @@
   {% if following %}
     <a
       class="btn btn-lg btn-light"
-      href="{% url 'posts:profile_unfollow' author_name.username %}" role="button"
+      href="{% url 'posts:profile_unfollow' author.username %}" role="button"
     >
       Отписаться
     </a>
   {% else %}
       <a
         class="btn btn-lg btn-primary"
-        href="{% url 'posts:profile_follow' author_name.username %}" role="button"
+        href="{% url 'posts:profile_follow' author.username %}" role="button"
       >
         Подписаться
       </a>
@@ -29,7 +29,7 @@
     <article>
       <ul>
         <li>
-          Автор: {{ author_name.get_full_name }}
+          Автор: {{ author.get_full_name }}
           <a href="{% url "posts:profile" post.author.username %}">все посты пользователя</a>
         </li>
         <li>

@@ -243,24 +243,15 @@ class CacheTests(TestCase):
             cls.user = User.objects.create_user(
                 username=PostPagesTests.test_data['user_username']
             )
-            cls.group = Group.objects.create(
-                title=PostPagesTests.test_data['group_title'],
-                slug=PostPagesTests.test_data['group_slug'],
-                description=PostPagesTests.test_data['group_description'],
-            )
-
-            for i in range(13):
-                cls.post = Post.objects.create(
-                    author=cls.user,
-                    text=PostPagesTests.test_data['post_text'] + str(i),
-                    group=cls.group,
-                )
-                time.sleep(0.001)
 
         def setUp(self):
             self.guest_client = Client()
+
             self.authorized_client = Client()
             self.authorized_client.force_login(self.user)
+
+            self.authorized_client_2 = Client()
+            self.authorized_client_2.force_login(self.user)
 
         def test_follow(self):
             self.authorized_client.post(
@@ -268,3 +259,15 @@ class CacheTests(TestCase):
                         kwargs={'username': self.user.username})
             )
             self.assertEqual(Follow.objects.count(), 0)
+
+        def test_follow_index(self):
+            Follow.objects.create(user=self.user_follower,
+                                  author=self.user_following)
+            response = self.authorized_client.get(
+                reverse('posts:follow_index'))
+            self.assertEqual(response.context['page_obj'][0].text, self.post.text)
+            response = self.authorized_client_2.get(
+                reverse('posts:follow_index'))
+            self.assertNotContains(response, self.post.text)
+
+
