@@ -244,17 +244,24 @@ class CacheTests(TestCase):
                 username=PostPagesTests.test_data['user_username']
             )
 
+            for i in range(13):
+                cls.post = Post.objects.create(
+                    author=cls.user,
+                    text=PaginatorTests.test_data['post_text'] + str(i),
+                )
+                time.sleep(0.001)
+
         def setUp(self):
             self.guest_client = Client()
 
-            self.authorized_client = Client()
-            self.authorized_client.force_login(self.user)
+            self.user_follower = Client()
+            self.user_follower.force_login(self.user)
 
-            self.authorized_client_2 = Client()
-            self.authorized_client_2.force_login(self.user)
+            self.user_following = Client()
+            self.user_following.force_login(self.user)
 
-        def test_follow(self):
-            self.authorized_client.post(
+        def test_follow_null(self):
+            self.user_following.post(
                 reverse('posts:profile_follow',
                         kwargs={'username': self.user.username})
             )
@@ -265,9 +272,10 @@ class CacheTests(TestCase):
                                   author=self.user_following)
             response = self.authorized_client.get(
                 reverse('posts:follow_index'))
-            self.assertEqual(response.context['page_obj'][0].text, self.post.text)
+            self.assertEqual(
+                response.context['page_obj'][0].text,
+                self.post.text
+            )
             response = self.authorized_client_2.get(
                 reverse('posts:follow_index'))
             self.assertNotContains(response, self.post.text)
-
-
