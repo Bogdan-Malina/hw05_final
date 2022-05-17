@@ -64,7 +64,8 @@ class PostPagesTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    # Проверяем используемые шаблоны
+        # Проверяем используемые шаблоны
+
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
@@ -212,10 +213,29 @@ class CacheTests(TestCase):
             username=PaginatorTests.test_data['user_username']
         )
 
+        cls.author = User.objects.create(username='user_author')
+
         cls.cache = cache
 
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text=PaginatorTests.test_data['post_text']
+        )
+
     def setUp(self):
-        self.authorized_client = Client()
+        self.guest_client = Client()
+
+        self.authorized_author = Client()
+        self.authorized_author.force_login(self.author)
+
+        self.user_1 = User.objects.create_user(username='test_1')
+        self.user_2 = User.objects.create_user(username='test_2')
+
+        self.authorized_not_author_1 = Client()
+        self.authorized_not_author_1.force_login(self.user_1)
+
+        self.authorized_not_author_2 = Client()
+        self.authorized_not_author_2.force_login(self.user_2)
 
     def test_cache(self):
         self.cache.clear()
@@ -223,59 +243,53 @@ class CacheTests(TestCase):
             author=self.user,
             text='test'
         )
-        response = self.authorized_client.get(
+        response = self.authorized_author.get(
             PostPagesTests.templates_pages_names['posts/index.html']
         )
         cache_post = response.content
         post.delete()
-        response = self.authorized_client.get(
+        response = self.authorized_author.get(
             PostPagesTests.templates_pages_names['posts/index.html']
         )
         self.assertEqual(response.content, cache_post)
         self.cache.clear()
-        response = self.authorized_client.get(reverse('posts:index'))
+        response = self.authorized_author.get(reverse('posts:index'))
         self.assertNotEqual(response.content, cache_post)
 
-    class FollowTest(TestCase):
-        @classmethod
-        def setUpClass(cls):
-            super().setUpClass()
-            cls.user = User.objects.create_user(
-                username=PostPagesTests.test_data['user_username']
-            )
+    def test_follow_null(self):
+        Follow.objects.create(
+            user=self.user_2,
+            author=self.user_1
+        )
 
-            for i in range(13):
-                cls.post = Post.objects.create(
-                    author=cls.user,
-                    text=PaginatorTests.test_data['post_text'] + str(i),
-                )
-                time.sleep(0.001)
+        Post.objects.create(
+            text='test_1',
+            author=self.user_1,
+        )
 
-        def setUp(self):
-            self.guest_client = Client()
+        post_author = Post.objects.create(
+            text='test_2',
+            author=self.author,
+        )
 
-            self.user_follower = Client()
-            self.user_follower.force_login(self.user)
+        response = self.authorized_not_author_2.get(
+            reverse('posts:follow_index')
+        )
 
-            self.user_following = Client()
-            self.user_following.force_login(self.user)
+        post = response.context.get('page_obj').object_list[0]
+        self.assertNotEqual(post, post_author)
 
-        def test_follow_null(self):
-            self.user_following.post(
-                reverse('posts:profile_follow',
-                        kwargs={'username': self.user.username})
-            )
-            self.assertEqual(Follow.objects.count(), 0)
+    def test_follow(self):
+        Follow.objects.create(user=self.user_1, author=self.author)
 
-        def test_follow_index(self):
-            Follow.objects.create(user=self.user_follower,
-                                  author=self.user_following)
-            response = self.authorized_client.get(
-                reverse('posts:follow_index'))
-            self.assertEqual(
-                response.context['page_obj'][0].text,
-                self.post.text
-            )
-            response = self.authorized_client_2.get(
-                reverse('posts:follow_index'))
-            self.assertNotContains(response, self.post.text)
+        new_post_author = Post.objects.create(
+            text='Тестовый текст новый',
+            author=self.author,
+        )
+
+        response = self.authorized_not_author_1.get(
+            reverse('posts:follow_index')
+        )
+
+        first_object = response.context.get('page_obj').object_list[0]
+        self.assertEqual(first_object, new_post_author)
