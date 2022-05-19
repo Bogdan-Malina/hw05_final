@@ -237,6 +237,30 @@ class CacheTests(TestCase):
         self.authorized_not_author_2 = Client()
         self.authorized_not_author_2.force_login(self.user_2)
 
+    def test_auth_follow(self):
+        self.client.force_login(self.user_2)
+
+        Post.objects.create(
+            text='test_1',
+            author=self.user_1,
+        )
+
+        Follow.objects.create(
+            id=1,
+            user=self.user_2,
+            author=self.user_1
+        )
+
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), 1)
+
+        follow_object = Follow.objects.get(id=1)
+        follow_object.delete()
+
+        response_2 = self.client.get(reverse('posts:follow_index'))
+
+        self.assertEqual(len(response_2.context['page_obj']), 0)
+
     def test_cache(self):
         self.cache.clear()
         post = Post.objects.create(
