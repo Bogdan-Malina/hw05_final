@@ -256,75 +256,82 @@ class CacheTests(TestCase):
         response = self.authorized_author.get(reverse('posts:index'))
         self.assertNotEqual(response.content, cache_post)
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(
-            username=PaginatorTests.test_data['user_username']
-        )
+    class FollowTests(TestCase):
 
-        cls.author = User.objects.create(username='user_author')
+        COUNT_FOLLOW_POST = 1
+        COUNT_UNFOLLOW_POST = 0
 
-        cls.cache = cache
+        @classmethod
+        def setUpClass(cls):
+            super().setUpClass()
+            cls.user = User.objects.create_user(
+                username=PaginatorTests.test_data['user_username']
+            )
 
-    def test_auth_follow(self):
-        self.client.force_login(self.user_2)
+            cls.author = User.objects.create(username='user_author')
 
-        Post.objects.create(
-            text='test_1',
-            author=self.user_1,
-        )
+            cls.cache = cache
 
-        Follow.objects.create(
-            id=1,
-            user=self.user_2,
-            author=self.user_1
-        )
+        def setUp(self):
+            self.authorized_author = Client()
+            self.authorized_author.force_login(self.author)
 
-        response = self.client.get(reverse('posts:follow_index'))
-        self.assertEqual(len(response.context['page_obj']), 1)
+            self.authorized_not_author = Client()
+            self.authorized_not_author.force_login(self.user_2)
 
-        follow_object = Follow.objects.get(id=1)
-        follow_object.delete()
+            Post.objects.create(
+                text='test_1',
+                author=self.authorized_author,
+            )
 
-        response_2 = self.client.get(reverse('posts:follow_index'))
+        def test_auth_follow(self):
+            Follow.objects.create(
+                id=1,
+                user=self.authorized_not_author,
+                author=self.authorized_author
+            )
 
-        self.assertEqual(len(response_2.context['page_obj']), 0)
+            response = self.client.get(reverse('posts:follow_index'))
+            self.assertEqual(len(response.context['page_obj']), self.COUNT_FOLLOW_POST)
 
-    def test_follow_null(self):
-        Follow.objects.create(
-            user=self.user_2,
-            author=self.user_1
-        )
+            follow_object = Follow.objects.get(id=1)
+            follow_object.delete()
 
-        Post.objects.create(
-            text='test_1',
-            author=self.user_1,
-        )
+            response_2 = self.client.get(reverse('posts:follow_index'))
+            self.assertEqual(len(response_2.context['page_obj']), self.COUNT_UNFOLLOW_POST)
 
-        post_author = Post.objects.create(
-            text='test_2',
-            author=self.author,
-        )
+        def test_follow_null(self):
+            Follow.objects.create(
+                user=self.authorized_not_author,
+                author=self.authorized_author
+            )
 
-        response = self.authorized_not_author_2.get(
-            reverse('posts:follow_index')
-        )
+            post_author = Post.objects.create(
+                text='test_2',
+                author=self.authorized_author,
+            )
 
-        post = response.context.get('page_obj').object_list[0]
-        self.assertNotEqual(post, post_author)
+            response = self.authorized_not_author.get(
+                reverse('posts:follow_index')
+            )
 
-    def test_follow(self):
-        Follow.objects.create(user=self.user_1, author=self.author)
+            post = response.context.get('page_obj').object_list[0]
+            self.assertNotEqual(post, post_author)
 
-        new_post_author = Post.objects.create(
-            text='Тестовый текст новый',
-            author=self.author,
-        )
+        def test_follow(self):
+            Follow.objects.create(
+                user=self.authorized_not_author,
+                author=self.authorized_author
+            )
 
-        response = self.authorized_not_author_1.get(
-            reverse('posts:follow_index')
-        )
+            new_post_author = Post.objects.create(
+                text='Тестовый текст',
+                author=self.authorized_author,
+            )
 
-        first_object = response.context.get('page_obj').object_list[0]
-        self.assertEqual(first_object, new_post_author)
+            response = self.authorized_not_author.get(
+                reverse('posts:follow_index')
+            )
+
+            first_object = response.context.get('page_obj').object_list[0]
+            self.assertEqual(first_object, new_post_author)
