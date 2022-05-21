@@ -237,6 +237,36 @@ class CacheTests(TestCase):
         self.authorized_not_author_2 = Client()
         self.authorized_not_author_2.force_login(self.user_2)
 
+    def test_cache(self):
+        self.cache.clear()
+        post = Post.objects.create(
+            author=self.user,
+            text='test'
+        )
+        response = self.authorized_author.get(
+            PostPagesTests.templates_pages_names['posts/index.html']
+        )
+        cache_post = response.content
+        post.delete()
+        response = self.authorized_author.get(
+            PostPagesTests.templates_pages_names['posts/index.html']
+        )
+        self.assertEqual(response.content, cache_post)
+        self.cache.clear()
+        response = self.authorized_author.get(reverse('posts:index'))
+        self.assertNotEqual(response.content, cache_post)
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(
+            username=PaginatorTests.test_data['user_username']
+        )
+
+        cls.author = User.objects.create(username='user_author')
+
+        cls.cache = cache
+
     def test_auth_follow(self):
         self.client.force_login(self.user_2)
 
@@ -260,25 +290,6 @@ class CacheTests(TestCase):
         response_2 = self.client.get(reverse('posts:follow_index'))
 
         self.assertEqual(len(response_2.context['page_obj']), 0)
-
-    def test_cache(self):
-        self.cache.clear()
-        post = Post.objects.create(
-            author=self.user,
-            text='test'
-        )
-        response = self.authorized_author.get(
-            PostPagesTests.templates_pages_names['posts/index.html']
-        )
-        cache_post = response.content
-        post.delete()
-        response = self.authorized_author.get(
-            PostPagesTests.templates_pages_names['posts/index.html']
-        )
-        self.assertEqual(response.content, cache_post)
-        self.cache.clear()
-        response = self.authorized_author.get(reverse('posts:index'))
-        self.assertNotEqual(response.content, cache_post)
 
     def test_follow_null(self):
         Follow.objects.create(
