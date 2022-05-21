@@ -292,13 +292,19 @@ class CacheTests(TestCase):
             )
 
             response = self.client.get(reverse('posts:follow_index'))
-            self.assertEqual(len(response.context['page_obj']), self.COUNT_FOLLOW_POST)
+            self.assertEqual(
+                len(response.context['page_obj']),
+                self.COUNT_FOLLOW_POST
+            )
 
             follow_object = Follow.objects.get(id=1)
             follow_object.delete()
 
             response_2 = self.client.get(reverse('posts:follow_index'))
-            self.assertEqual(len(response_2.context['page_obj']), self.COUNT_UNFOLLOW_POST)
+            self.assertEqual(
+                len(response_2.context['page_obj']),
+                self.COUNT_UNFOLLOW_POST
+            )
 
         def test_follow_null(self):
             Follow.objects.create(
