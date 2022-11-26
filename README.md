@@ -48,3 +48,13 @@ python manage.py migrate
 ```
 python manage.py runserver
 ```
+
+### Технологии:
+- Python 3.7
+- Django 2.2.16
+- Pillow 8.3.1
+- pytest 6.2.4
+- pytest-django 4.4.0
+- pytest-pythonpath 0.7.3
+
+
