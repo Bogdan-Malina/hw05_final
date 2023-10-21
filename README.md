@@ -11,7 +11,7 @@ git clone https://github.com/Bogdan-Malina/hw05_final/
 ```
 
 ```
-cd yatube
+cd YaTube
 ```
 
 Cоздать и активировать виртуальное окружение:
@@ -35,7 +35,9 @@ pip install -r requirements.txt
 ```
 
 Выполнить миграции:
-
+```
+cd yatube
+```
 ```
 python manage.py makemigrations
 ```
@@ -52,7 +54,7 @@ python manage.py runserver
 ### Технологии:
 - Python 3.7
 - Django 2.2.16
-- Pillow 8.3.1
+- Pillow 9.5.0
 - pytest 6.2.4
 - pytest-django 4.4.0
 - pytest-pythonpath 0.7.3
