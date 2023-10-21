@@ -59,4 +59,7 @@ python manage.py runserver
 - pytest-django 4.4.0
 - pytest-pythonpath 0.7.3
 
+### Автор
+Данил Воронин https://github.com/Bogdan-Malina
+
 
